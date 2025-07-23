@@ -139,10 +139,7 @@ export class ConfigService {
   }
 
   static getWebhookUrl(baseUrl?: string): string {
-    // Use the new webhook-evolution Edge Function (public, no JWT verification)
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://bcbootnozntaomsysdpa.supabase.co';
-    
-    // webhook-evolution is deployed without JWT verification for external APIs
-    return `${supabaseUrl}/functions/v1/webhook-evolution`;
+    // Use the Netlify Function for webhook processing
+    return 'https://gchatsena.netlify.app/api/webhook';
   }
 }
