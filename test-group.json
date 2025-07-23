@@ -1,0 +1,20 @@
+{
+  "event": "messages.upsert",
+  "instance": "atendimento3",
+  "data": {
+    "key": {
+      "remoteJid": "120363403959183356@g.us",
+      "fromMe": false,
+      "id": "GROUP_TEST_456",
+      "participant": "5511888888888@s.whatsapp.net"
+    },
+    "pushName": "João Silva",
+    "message": {
+      "conversation": "Olá pessoal do grupo!"
+    },
+    "messageType": "conversation",
+    "messageTimestamp": 1753287100,
+    "instanceId": "d57979aa-f857-42f7-b935-7081bdda46dd",
+    "source": "test"
+  }
+}

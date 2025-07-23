@@ -1,0 +1,19 @@
+{
+  "event": "messages.upsert",
+  "instance": "atendimento3",
+  "data": {
+    "key": {
+      "remoteJid": "5511999999999@s.whatsapp.net",
+      "fromMe": false,
+      "id": "NETLIFY_TEST_123"
+    },
+    "pushName": "Teste Netlify",
+    "message": {
+      "conversation": "Teste via Netlify funcionando!"
+    },
+    "messageType": "conversation",
+    "messageTimestamp": 1753287000,
+    "instanceId": "d57979aa-f857-42f7-b935-7081bdda46dd",
+    "source": "test"
+  }
+}

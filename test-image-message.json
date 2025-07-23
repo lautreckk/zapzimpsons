@@ -1,0 +1,54 @@
+[
+  {
+    "body": {
+      "event": "messages.upsert",
+      "instance": "testex",
+      "data": {
+        "key": {
+          "remoteJid": "5547920020811@s.whatsapp.net",
+          "fromMe": false,
+          "id": "3A1CDC76A0449BFB442F",
+          "senderLid": "144942747881497@lid"
+        },
+        "pushName": "Gabriel Sena",
+        "status": "DELIVERY_ACK",
+        "message": {
+          "imageMessage": {
+            "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m232/AQMDhmZaxI1aGGZX4EeIy_efo7iKVO9c-Z_vulpDw_V8dvo3HmwyFh-U295PRDlr6tgODadkHOjdrNqAfNqIhfy10nEXFutxBplh4D70JA?ccb=9-4&oh=01_Q5Aa2AEbXNSfqrdMj9hsiat4tVpKSsnPM9X4LaSDWUunXG-HxQ&oe=68A3526B&_nc_sid=e6ed6c&mms3=true",
+            "mimetype": "image/jpeg",
+            "fileSha256": "AlMVuTOLA4xP2AcU/2kOcYc6o+0l9sPUgW14b50URHE=",
+            "fileLength": "132651",
+            "height": 1600,
+            "width": 900,
+            "mediaKey": "AyQY1Y26ej7ZKn9UfRiy6huFEy34uiptxnmk0Q6qUCU=",
+            "fileEncSha256": "u+nNYIPJbKM0KIr3ekqcFR5lgeuNHjsoTUpZOZOZFAU=",
+            "directPath": "/o1/v/t24/f2/m232/AQMDhmZaxI1aGGZX4EeIy_efo7iKVO9c-Z_vulpDw_V8dvo3HmwyFh-U295PRDlr6tgODadkHOjdrNqAfNqIhfy10nEXFutxBplh4D70JA?ccb=9-4&oh=01_Q5Aa2AEbXNSfqrdMj9hsiat4tVpKSsnPM9X4LaSDWUunXG-HxQ&oe=68A3526B&_nc_sid=e6ed6c",
+            "mediaKeyTimestamp": "1752953384",
+            "jpegThumbnail": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABsSFBcUERsXFhceHBsgKEIrKCUlKFE6PTBCYFVlZF9VXVtqeJmBanGQc1tdhbWGkJ6jq62rZ4C8ybqmx5moq6T/2wBDARweHigjKE4rK06kbl1upKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKT/wgARCABIAEgDASIAAhEBAxEB/8QAGQAAAwEBAQAAAAAAAAAAAAAAAAIDBAEF/8QAGAEBAQEBAQAAAAAAAAAAAAAAAAECAwT/2gAMAwEAAhADEAAAAI+z5nqQRtOJMj0ORWxlFXfi1MUQSXzt0yddmSy25jQYmFptvKTM+80tnbpjXBO1Yief0a38ld8N+SXRuHaQoyscDL0Odigaj9CE4AwB/8QAHBEAAgICAwAAAAAAAAAAAAAAAREAEAIhMDFB/9oACAECAQE/ALcbo0A6cwHpmjAAOpkgeJz/xAAdEQADAQABBQAAAAAAAAAAAAAAARECEBIhMDFR/9oACAEDAQE/AOIdLJwvZmUcSIRG38O6Hpsy6vH/AP/EACkQAAICAQQBBAIBBQAAAAAAAAECABEDBCExQRITIlFhFHFSECMygaH/2gAIAQEAAT8A0yf4rFFACdTIOL5lDym/yZZJq4G6hfeczRreVYIeZl4m4NmLZnhMjFbuYWtiTc0I95PxAeu/6NzNVkb1yATQmmYMgMBua5P7RYNRH/ZoSzIS3Rmi2Qn5gbuXtGcckgR8+mU+6iZp3XJbJsPiJk8dm2+5mdGr3KfqDLjClQRZ+Jhy5LCKaEzPnxp5HJtcXUsSPJzUyZSzE2ahmHM2I+S/7EzaxsqePjUBN8z1vToqAPszH7De9xnGRaYnbqpqHAXxVT+6nkK5gdSOYrLV+Q/UJA7EUhuxEVMjENvUZMl3QNxXRMfi+LyPyDGYkHb9RsTknaHG/wDGFX/iYfLsGWR0ZjxOo8lZdxBrX4ZmqHW5L2O0/Nf4E/NbtRPzvlYNavYMGsxnkQanETzBmxHsT1EPIl4j1MpW/bLFfcVQw5hxfcZCouAE8QLsb56n//4AAwD/2Q==",
+            "contextInfo": {
+              "statusSourceType": "IMAGE"
+            },
+            "firstScanSidecar": "ZF/OzbVOlq2Usw==",
+            "firstScanLength": 11365,
+            "scansSidecar": "ZF/OzbVOlq2Us//v1byYJiGJgHdvZoLkGQoXTnt0HQEiNqe+kONd9g==",
+            "scanLengths": [
+              11365,
+              42278,
+              25955,
+              53051
+            ],
+            "midQualityFileSha256": "hDJHplNL8hsyU1rk+Y2YLbgKG4KPmMO62vGdamoLdfQ=",
+            "imageSourceType": "USER_IMAGE"
+          }
+        },
+        "contextInfo": {
+          "statusSourceType": "IMAGE"
+        },
+        "messageType": "imageMessage",
+        "messageTimestamp": 1752953386,
+        "instanceId": "82e93d4a-554b-4f12-85b1-28ea5727f6bd",
+        "source": "ios"
+      }
+    }
+  }
+]

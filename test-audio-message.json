@@ -1,0 +1,49 @@
+[
+  {
+    "body": {
+      "event": "messages.upsert",
+      "instance": "testex",
+      "data": {
+        "key": {
+          "remoteJid": "5547920020811@s.whatsapp.net",
+          "fromMe": false,
+          "id": "3EB07E5DD46D6CA02F2862",
+          "senderLid": "144942747881497@lid"
+        },
+        "pushName": "Gabriel Sena",
+        "status": "DELIVERY_ACK",
+        "message": {
+          "audioMessage": {
+            "url": "https://mmg.whatsapp.net/v/t62.7117-24/40931329_3627609957369424_5330899608082478531_n.enc?ccb=11-4&oh=01_Q5Aa2AGBKP5F5CL8ajHo5a4xie5YjGAcJA5zycXfpWadVr5K4w&oe=68A35ECB&_nc_sid=5e03e0&mms3=true",
+            "mimetype": "audio/ogg; codecs=opus",
+            "fileSha256": "54+ZewgowmmyaOoKX+OPE7nF/ccxiKbxfJScAbTC63A=",
+            "fileLength": "4362",
+            "seconds": 2,
+            "ptt": true,
+            "mediaKey": "A8kkblI1XThAdEqyJMH//85J5le+j3/a8PG+GQ5iB+s=",
+            "fileEncSha256": "Y17WNAczgeZhrdFf0SID11OKzaKbZyKRnDwYZfTbZkE=",
+            "directPath": "/v/t62.7117-24/40931329_3627609957369424_5330899608082478531_n.enc?ccb=11-4&oh=01_Q5Aa2AGBKP5F5CL8ajHo5a4xie5YjGAcJA5zycXfpWadVr5K4w&oe=68A35ECB&_nc_sid=5e03e0",
+            "mediaKeyTimestamp": "1752953214",
+            "contextInfo": {
+              "disappearingMode": {
+                "initiator": "CHANGED_IN_CHAT"
+              }
+            },
+            "waveform": "AAAAAAAAAAAAAAAAAAAAAAUaMDk6PCUOAAAAAAAAAAADCxMYHR0RBAwfMiQWDQwKDxUaDwUAAAAAAAAAAAAAAA==",
+            "viewOnce": false
+          },
+          "speechToText": "[audio] "
+        },
+        "contextInfo": {
+          "disappearingMode": {
+            "initiator": "CHANGED_IN_CHAT"
+          }
+        },
+        "messageType": "audioMessage",
+        "messageTimestamp": 1752953216,
+        "instanceId": "82e93d4a-554b-4f12-85b1-28ea5727f6bd",
+        "source": "web"
+      }
+    }
+  }
+]

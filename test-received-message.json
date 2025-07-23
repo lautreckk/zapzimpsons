@@ -1,0 +1,25 @@
+[
+  {
+    "body": {
+      "event": "messages.upsert",
+      "instance": "atendimento6",
+      "data": {
+        "key": {
+          "remoteJid": "5547920020811@s.whatsapp.net",
+          "fromMe": false,
+          "id": "3EB037C6CE15C8AAF17ECC",
+          "senderLid": "144942747881497@lid"
+        },
+        "pushName": "Gabriel Sena",
+        "status": "DELIVERY_ACK",
+        "message": {
+          "conversation": "Opa, teste de mensagem recebida!"
+        },
+        "messageType": "conversation",
+        "messageTimestamp": 1753159697,
+        "instanceId": "d57979aa-f857-42f7-b935-7081bdda46dd",
+        "source": "web"
+      }
+    }
+  }
+]

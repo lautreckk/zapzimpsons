@@ -1,0 +1,19 @@
+{
+  "event": "messages.upsert",
+  "instance": "atendimento3",
+  "data": {
+    "key": {
+      "remoteJid": "5511666666666@s.whatsapp.net",
+      "fromMe": false,
+      "id": "INDIVIDUAL_NAME_TEST_456"
+    },
+    "pushName": "João Silva",
+    "message": {
+      "conversation": "Oi, como você está?"
+    },
+    "messageType": "conversation",
+    "messageTimestamp": 1753287300,
+    "instanceId": "d57979aa-f857-42f7-b935-7081bdda46dd",
+    "source": "test"
+  }
+}
