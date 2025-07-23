@@ -47,6 +47,7 @@ export interface Message {
   instance_id: string;
   message_id?: string;
   sender_phone: string;
+  sender_name?: string;
   recipient_phone: string;
   message_type: 'text' | 'image' | 'audio' | 'video' | 'document' | 'sticker';
   content?: string;

@@ -307,6 +307,11 @@ export function ChatInbox() {
                         ? "bg-primary text-primary-foreground" 
                         : "bg-muted text-foreground"
                     }`}>
+                      {!message.is_from_me && message.sender_name && (
+                        <p className="text-xs font-semibold mb-1 opacity-80">
+                          {message.sender_name}
+                        </p>
+                      )}
                       {message.message_type !== 'text' && (
                         <p className="text-xs opacity-70 mb-1 capitalize">
                           {message.message_type}

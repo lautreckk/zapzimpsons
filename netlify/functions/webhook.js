@@ -43,11 +43,52 @@ export const handler = async (event, context) => {
     if (processedData.body?.event === 'messages.upsert') {
       const messageData = processedData.body.data;
       const rawPhone = messageData.key.remoteJid;
-      const phone = rawPhone.replace('@s.whatsapp.net', '').replace('@c.us', '');
       const isFromMe = messageData.key.fromMe;
       const instanceName = processedData.body.instance;
       
-      console.log(`💬 ${timestamp} - Mensagem: de=${phone}, paraEu=${isFromMe}, instancia=${instanceName}`);
+      // Identificar se é grupo ou chat individual
+      const isGroup = rawPhone.includes('@g.us');
+      const isIndividual = rawPhone.includes('@s.whatsapp.net') || rawPhone.includes('@c.us');
+      
+      let contactPhone, contactName, chatIdentifier;
+      
+      if (isGroup) {
+        // Para grupos: usar o ID do grupo como identificador
+        chatIdentifier = rawPhone; // Manter o ID completo do grupo
+        contactPhone = rawPhone.replace('@g.us', '');
+        
+        // Nome do contato será o nome do participante ou do grupo
+        if (messageData.key.participant && !isFromMe) {
+          // Mensagem de um participante específico no grupo
+          const participantPhone = messageData.key.participant.replace('@s.whatsapp.net', '').replace('@c.us', '');
+          contactName = messageData.pushName ? `${messageData.pushName} (Grupo)` : `${participantPhone} (Grupo)`;
+        } else {
+          // Mensagem do próprio grupo ou de mim
+          contactName = `Grupo ${contactPhone}`;
+        }
+        
+        console.log(`👥 ${timestamp} - Mensagem de GRUPO: grupo=${contactPhone}, participante=${messageData.key.participant || 'próprio'}, nome=${contactName}`);
+      } else if (isIndividual) {
+        // Para chats individuais: usar o número da pessoa
+        contactPhone = rawPhone.replace('@s.whatsapp.net', '').replace('@c.us', '');
+        chatIdentifier = contactPhone;
+        contactName = messageData.pushName || contactPhone;
+        
+        console.log(`👤 ${timestamp} - Mensagem INDIVIDUAL: de=${contactPhone}, nome=${contactName}`);
+      } else {
+        console.log(`❓ ${timestamp} - Tipo de chat desconhecido: ${rawPhone}`);
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            message: 'Tipo de chat não reconhecido',
+            chatType: rawPhone
+          })
+        };
+      }
+      
+      console.log(`💬 ${timestamp} - Processando: tipo=${isGroup ? 'GRUPO' : 'INDIVIDUAL'}, identificador=${chatIdentifier}, instancia=${instanceName}`);
       
       // Buscar instância no banco
       let { data: instance } = await supabase
@@ -93,7 +134,7 @@ export const handler = async (event, context) => {
       console.log(`✅ ${timestamp} - Instância encontrada: ${instance.instance_name}`);
       
       // Processar mensagem
-      const result = await processMessage(supabase, instance, messageData, phone, isFromMe, timestamp);
+      const result = await processMessage(supabase, instance, messageData, chatIdentifier, contactName, isFromMe, isGroup, timestamp);
       
       return {
         statusCode: 200,
@@ -133,25 +174,25 @@ export const handler = async (event, context) => {
 };
 
 // Função para processar mensagens
-async function processMessage(supabase, instance, messageData, phone, isFromMe, timestamp) {
+async function processMessage(supabase, instance, messageData, chatIdentifier, contactName, isFromMe, isGroup, timestamp) {
   try {
-    console.log(`👤 ${timestamp} - Buscando contato: ${phone}`);
+    console.log(`${isGroup ? '👥' : '👤'} ${timestamp} - Buscando contato: ${chatIdentifier} (${isGroup ? 'GRUPO' : 'INDIVIDUAL'})`);
     
     // Buscar ou criar contato
     let { data: contact } = await supabase
       .from('contacts')
       .select('*')
-      .eq('phone_number', phone)
+      .eq('phone_number', chatIdentifier)
       .eq('instance_id', instance.id)
       .single();
     
     if (!contact) {
-      console.log(`➕ ${timestamp} - Criando contato: ${phone} (${messageData.pushName || 'Sem nome'})`);
+      console.log(`➕ ${timestamp} - Criando contato: ${chatIdentifier} - ${contactName}`);
       const { data: newContact, error: contactError } = await supabase
         .from('contacts')
         .insert({
-          phone_number: phone,
-          name: messageData.pushName || phone,
+          phone_number: chatIdentifier,
+          name: contactName,
           instance_id: instance.id
         })
         .select()
@@ -162,6 +203,14 @@ async function processMessage(supabase, instance, messageData, phone, isFromMe, 
         throw new Error('Falha ao criar contato');
       }
       contact = newContact;
+    } else if (contact.name !== contactName) {
+      // Atualizar nome do contato se mudou
+      console.log(`🔄 ${timestamp} - Atualizando nome do contato de '${contact.name}' para '${contactName}'`);
+      await supabase
+        .from('contacts')
+        .update({ name: contactName })
+        .eq('id', contact.id);
+      contact.name = contactName;
     }
     
     console.log(`💭 ${timestamp} - Buscando conversa com contato: ${contact.id}`);
@@ -236,6 +285,29 @@ async function processMessage(supabase, instance, messageData, phone, isFromMe, 
     
     console.log(`💾 ${timestamp} - Salvando mensagem: "${content.substring(0, 30)}..." (${messageType})`);
     
+    // Preparar dados para salvar mensagem
+    let senderPhone, recipientPhone, senderName;
+    
+    if (isGroup) {
+      if (isFromMe) {
+        senderPhone = instance.phone_number || '';
+        recipientPhone = chatIdentifier; // ID do grupo
+        senderName = instance.profile_name || 'Você';
+      } else {
+        // Mensagem de participante do grupo
+        senderPhone = messageData.key.participant ? 
+          messageData.key.participant.replace('@s.whatsapp.net', '').replace('@c.us', '') : 
+          chatIdentifier;
+        recipientPhone = chatIdentifier; // ID do grupo
+        senderName = messageData.pushName || senderPhone;
+      }
+    } else {
+      // Chat individual
+      senderPhone = isFromMe ? (instance.phone_number || '') : chatIdentifier;
+      recipientPhone = isFromMe ? chatIdentifier : (instance.phone_number || '');
+      senderName = isFromMe ? 'Você' : (messageData.pushName || chatIdentifier);
+    }
+    
     // Salvar mensagem
     const { error: messageError } = await supabase
       .from('messages')
@@ -243,8 +315,9 @@ async function processMessage(supabase, instance, messageData, phone, isFromMe, 
         conversation_id: conversation.id,
         instance_id: instance.id,
         message_id: messageData.key.id,
-        sender_phone: isFromMe ? (instance.phone_number || '') : phone,
-        recipient_phone: isFromMe ? phone : (instance.phone_number || ''),
+        sender_phone: senderPhone,
+        sender_name: senderName,
+        recipient_phone: recipientPhone,
         message_type: messageType,
         content,
         media_url: mediaUrl,
@@ -272,10 +345,14 @@ async function processMessage(supabase, instance, messageData, phone, isFromMe, 
     return {
       success: true,
       messageId: messageData.key.id,
-      phone,
+      chatIdentifier,
+      chatType: isGroup ? 'grupo' : 'individual',
       content: content.substring(0, 50),
       type: messageType,
-      contactName: contact.name
+      contactName: contact.name,
+      participant: isGroup && messageData.key.participant ? 
+        messageData.key.participant.replace('@s.whatsapp.net', '').replace('@c.us', '') : 
+        null
     };
     
   } catch (error) {
