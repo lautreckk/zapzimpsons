@@ -282,6 +282,53 @@ async function processMessage(supabase, instance, messageData, chatIdentifier, c
         throw new Error('Falha ao criar conversa');
       }
       conversation = newConversation;
+      
+      // Criar lead automaticamente para nova conversa
+      try {
+        console.log(`🏷️ ${timestamp} - Criando lead para nova conversa`);
+        
+        // Buscar a primeira coluna do kanban
+        const { data: firstColumn } = await supabase
+          .from('kanban_columns')
+          .select('id')
+          .eq('is_default', true)
+          .order('position', { ascending: true })
+          .limit(1)
+          .single();
+        
+        if (firstColumn) {
+          // Buscar próxima posição na coluna
+          const { data: leads } = await supabase
+            .from('leads')
+            .select('position')
+            .eq('kanban_column_id', firstColumn.id)
+            .order('position', { ascending: false })
+            .limit(1);
+          
+          const nextPosition = (leads && leads.length > 0) ? leads[0].position + 1 : 0;
+          
+          // Criar lead
+          await supabase
+            .from('leads')
+            .insert({
+              name: contactName,
+              phone: chatIdentifier,
+              conversation_id: conversation.id,
+              kanban_column_id: firstColumn.id,
+              priority: 'medium',
+              source: 'WhatsApp Chat',
+              tags: ['WhatsApp'],
+              position: nextPosition
+            });
+          
+          console.log(`✅ ${timestamp} - Lead criado automaticamente`);
+        } else {
+          console.log(`⚠️ ${timestamp} - Nenhuma coluna padrão encontrada para criar lead`);
+        }
+      } catch (leadError) {
+        console.error(`❌ ${timestamp} - Erro ao criar lead automaticamente:`, leadError);
+        // Não falhar o webhook por causa do erro do lead
+      }
     }
     
     // Verificar mensagem duplicada
