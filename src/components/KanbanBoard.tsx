@@ -1,95 +1,75 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, MoreVertical, User, Calendar } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Plus, MoreVertical, User, Calendar, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { KanbanService } from "@/services/kanbanService";
+import { KanbanColumnWithLeads } from "@/types/whatsapp";
+import { toast } from "sonner";
 
-const initialColumns = [
-  {
-    id: "novo",
-    title: "Novo Lead",
-    color: "bg-blue-500",
-    count: 8,
-    cards: [
-      {
-        id: 1,
-        name: "Maria Silva",
-        company: "Tech Solutions",
-        value: "R$ 15.000",
-        tags: ["WhatsApp", "Empresa"],
-        lastContact: "2h",
-        priority: "high"
-      },
-      {
-        id: 2,
-        name: "João Santos", 
-        company: "StartupXYZ",
-        value: "R$ 8.000",
-        tags: ["WebChat", "Startup"],
-        lastContact: "1d",
-        priority: "medium"
-      }
-    ]
-  },
-  {
-    id: "qualificado",
-    title: "Qualificado",
-    color: "bg-yellow-500", 
-    count: 5,
-    cards: [
-      {
-        id: 3,
-        name: "Ana Costa",
-        company: "Consultoria ABC",
-        value: "R$ 25.000",
-        tags: ["WhatsApp", "Premium"],
-        lastContact: "3h",
-        priority: "high"
-      }
-    ]
-  },
-  {
-    id: "proposta",
-    title: "Proposta Enviada",
-    color: "bg-orange-500",
-    count: 3,
-    cards: [
-      {
-        id: 4,
-        name: "Carlos Oliveira",
-        company: "Indústria DEF",
-        value: "R$ 45.000",
-        tags: ["WhatsApp", "Indústria"],
-        lastContact: "1d",
-        priority: "high"
-      }
-    ]
-  },
-  {
-    id: "fechamento",
-    title: "Fechamento",
-    color: "bg-green-500",
-    count: 2,
-    cards: [
-      {
-        id: 5,
-        name: "Lucia Fernandes",
-        company: "Comercio GHI",
-        value: "R$ 12.000",
-        tags: ["WebChat", "Comércio"],
-        lastContact: "2h",
-        priority: "high"
-      }
-    ]
-  }
+const COLUMN_COLORS = [
+  'bg-blue-500',
+  'bg-yellow-500',
+  'bg-orange-500',
+  'bg-green-500',
+  'bg-purple-500',
+  'bg-pink-500',
+  'bg-indigo-500',
+  'bg-red-500'
 ];
 
 export function KanbanBoard() {
-  const [columns, setColumns] = useState(initialColumns);
   const [draggedCard, setDraggedCard] = useState<any>(null);
+  const [newColumnTitle, setNewColumnTitle] = useState('');
+  const [isCreateColumnOpen, setIsCreateColumnOpen] = useState(false);
+  const queryClient = useQueryClient();
 
-  const handleDragStart = (e: React.DragEvent, card: any, columnId: string) => {
-    setDraggedCard({ ...card, sourceColumnId: columnId });
+  // Get kanban columns with leads
+  const { data: columns = [], isLoading } = useQuery({
+    queryKey: ['kanban-columns'],
+    queryFn: KanbanService.getKanbanColumns,
+  });
+
+  // Create column mutation
+  const createColumnMutation = useMutation({
+    mutationFn: async (title: string) => {
+      const colorIndex = columns.length % COLUMN_COLORS.length;
+      const color = COLUMN_COLORS[colorIndex];
+      return KanbanService.createKanbanColumn(title, undefined, color);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['kanban-columns'] });
+      setNewColumnTitle('');
+      setIsCreateColumnOpen(false);
+      toast.success('Nova coluna criada com sucesso!');
+    },
+    onError: (error: Error) => {
+      toast.error(`Erro ao criar coluna: ${error.message}`);
+    }
+  });
+
+  // Move lead mutation
+  const moveLeadMutation = useMutation({
+    mutationFn: async ({ leadId, targetColumnId, targetPosition }: {
+      leadId: string;
+      targetColumnId: string;
+      targetPosition: number;
+    }) => {
+      return KanbanService.moveLead(leadId, targetColumnId, targetPosition);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['kanban-columns'] });
+    },
+    onError: (error: Error) => {
+      toast.error(`Erro ao mover lead: ${error.message}`);
+    }
+  });
+
+  const handleDragStart = (e: React.DragEvent, lead: any, columnId: string) => {
+    setDraggedCard({ ...lead, sourceColumnId: columnId });
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -99,34 +79,18 @@ export function KanbanBoard() {
   const handleDrop = (e: React.DragEvent, targetColumnId: string) => {
     e.preventDefault();
     
-    if (!draggedCard || draggedCard.sourceColumnId === targetColumnId) return;
+    if (!draggedCard || draggedCard.sourceColumnId === targetColumnId) {
+      setDraggedCard(null);
+      return;
+    }
 
-    setColumns(prev => {
-      const newColumns = [...prev];
-      
-      // Remove from source column
-      const sourceCol = newColumns.find(col => col.id === draggedCard.sourceColumnId);
-      if (sourceCol) {
-        sourceCol.cards = sourceCol.cards.filter(card => card.id !== draggedCard.id);
-        sourceCol.count = sourceCol.cards.length;
-      }
-      
-      // Add to target column
-      const targetCol = newColumns.find(col => col.id === targetColumnId);
-      if (targetCol) {
-        targetCol.cards.push({
-          id: draggedCard.id,
-          name: draggedCard.name,
-          company: draggedCard.company,
-          value: draggedCard.value,
-          tags: draggedCard.tags,
-          lastContact: draggedCard.lastContact,
-          priority: draggedCard.priority
-        });
-        targetCol.count = targetCol.cards.length;
-      }
-      
-      return newColumns;
+    const targetColumn = columns.find(col => col.id === targetColumnId);
+    const targetPosition = targetColumn ? targetColumn.leads.length : 0;
+
+    moveLeadMutation.mutate({
+      leadId: draggedCard.id,
+      targetColumnId,
+      targetPosition
     });
     
     setDraggedCard(null);
@@ -134,11 +98,16 @@ export function KanbanBoard() {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "high": return "border-l-4 border-l-destructive";
-      case "medium": return "border-l-4 border-l-warning";
-      case "low": return "border-l-4 border-l-success";
+      case "high": return "border-l-4 border-l-red-500";
+      case "medium": return "border-l-4 border-l-yellow-500";
+      case "low": return "border-l-4 border-l-green-500";
       default: return "";
     }
+  };
+
+  const handleCreateColumn = () => {
+    if (!newColumnTitle.trim()) return;
+    createColumnMutation.mutate(newColumnTitle.trim());
   };
 
   return (
@@ -148,13 +117,58 @@ export function KanbanBoard() {
           <h1 className="text-2xl font-bold text-foreground">Funil de Vendas</h1>
           <p className="text-muted-foreground">Gerencie seus leads e oportunidades</p>
         </div>
-        <Button className="bg-gradient-primary hover:opacity-90">
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Lead
-        </Button>
+        <Dialog open={isCreateColumnOpen} onOpenChange={setIsCreateColumnOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-primary hover:opacity-90">
+              <Plus className="w-4 h-4 mr-2" />
+              Nova Coluna
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Criar Nova Coluna</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Título da Coluna</label>
+                <Input
+                  placeholder="Ex: Novo Status"
+                  value={newColumnTitle}
+                  onChange={(e) => setNewColumnTitle(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleCreateColumn();
+                    }
+                  }}
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsCreateColumnOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={handleCreateColumn}
+                  disabled={!newColumnTitle.trim() || createColumnMutation.isPending}
+                >
+                  {createColumnMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <Plus className="w-4 h-4 mr-2" />
+                  )}
+                  Criar
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      <div className="flex gap-6 overflow-x-auto pb-4">
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin" />
+        </div>
+      ) : (
+        <div className="flex gap-6 overflow-x-auto pb-4">
         {columns.map((column) => (
           <div
             key={column.id}
@@ -178,26 +192,30 @@ export function KanbanBoard() {
               </div>
             </div>
 
-            {/* Cards */}
+            {/* Leads */}
             <div className="p-4 space-y-3 min-h-[400px]">
-              {column.cards.map((card) => (
+              {column.leads.map((lead) => (
                 <Card
-                  key={card.id}
+                  key={lead.id}
                   draggable
-                  onDragStart={(e) => handleDragStart(e, card, column.id)}
-                  className={`p-4 cursor-move hover:shadow-md transition-all ${getPriorityColor(card.priority)} bg-gradient-card`}
+                  onDragStart={(e) => handleDragStart(e, lead, column.id)}
+                  className={`p-4 cursor-move hover:shadow-md transition-all ${getPriorityColor(lead.priority)} bg-gradient-card`}
                 >
                   <div className="space-y-3">
                     <div className="flex items-start justify-between">
                       <div>
-                        <h4 className="font-medium text-foreground">{card.name}</h4>
-                        <p className="text-sm text-muted-foreground">{card.company}</p>
+                        <h4 className="font-medium text-foreground">{lead.name}</h4>
+                        <p className="text-sm text-muted-foreground">{lead.company || lead.phone}</p>
                       </div>
-                      <span className="text-sm font-medium text-success">{card.value}</span>
+                      {lead.value && (
+                        <span className="text-sm font-medium text-green-600">
+                          R$ {lead.value.toLocaleString('pt-BR')}
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex flex-wrap gap-1">
-                      {card.tags.map((tag) => (
+                      {lead.tags.map((tag) => (
                         <Badge key={tag} variant="outline" className="text-xs">
                           {tag}
                         </Badge>
@@ -207,11 +225,11 @@ export function KanbanBoard() {
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <User className="w-3 h-3" />
-                        Último contato: {card.lastContact}
+                        {lead.source || 'WhatsApp'}
                       </div>
                       <div className="flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
-                        Hoje
+                        {lead.last_contact_at ? new Date(lead.last_contact_at).toLocaleDateString('pt-BR') : 'Hoje'}
                       </div>
                     </div>
                   </div>
@@ -228,7 +246,8 @@ export function KanbanBoard() {
             </div>
           </div>
         ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

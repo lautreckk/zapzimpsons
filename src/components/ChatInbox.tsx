@@ -28,6 +28,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { MessageService } from "@/services/messageService";
 import { WhatsAppService } from "@/services/whatsappService";
+import { KanbanService } from "@/services/kanbanService";
 import { Conversation, Message, Contact, WhatsAppInstance } from "@/types/whatsapp";
 import { toast } from "sonner";
 import { format, isToday, isYesterday } from "date-fns";
@@ -48,6 +49,34 @@ export function ChatInbox() {
   const queryClient = useQueryClient();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { playNotificationSound, soundEnabled, setSoundEnabled } = useNotificationSound();
+
+  // Create lead mutation
+  const createLeadMutation = useMutation({
+    mutationFn: async (conversationId: string) => {
+      if (!selectedConversation) return;
+      
+      const contactName = selectedConversation.contact.name || 'Sem nome';
+      const contactPhone = selectedConversation.contact.phone_number;
+      
+      return KanbanService.createLeadFromConversation(
+        conversationId,
+        contactName,
+        contactPhone,
+        {
+          source: 'WhatsApp Chat',
+          tags: ['WhatsApp'],
+          priority: 'medium'
+        }
+      );
+    },
+    onSuccess: () => {
+      toast.success('Lead criado com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['kanban-columns'] });
+    },
+    onError: (error: Error) => {
+      toast.error(`Erro ao criar lead: ${error.message}`);
+    }
+  });
 
   // Get WhatsApp instances
   const { data: instances = [] } = useQuery({
@@ -446,6 +475,20 @@ export function ChatInbox() {
                   </Button>
                   <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
                     <VideoIcon className="w-4 h-4" />
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="h-8 w-8 p-0"
+                    onClick={() => createLeadMutation.mutate(selectedConversation.id)}
+                    disabled={createLeadMutation.isPending}
+                    title="Criar Lead"
+                  >
+                    {createLeadMutation.isPending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <UserPlus className="w-4 h-4" />
+                    )}
                   </Button>
                   <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
                     <MoreVertical className="w-4 h-4" />

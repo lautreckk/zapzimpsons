@@ -201,3 +201,39 @@ export interface InstanceStatusResponse {
     Chat: number;
   };
 }
+
+// Tipos para o sistema de Kanban
+export interface KanbanColumn {
+  id: string;
+  title: string;
+  description?: string;
+  color: string;
+  position: number;
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Lead {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  company?: string;
+  value?: number;
+  priority: 'low' | 'medium' | 'high';
+  source?: string;
+  kanban_column_id?: string;
+  conversation_id?: string;
+  position: number;
+  tags: string[];
+  notes?: string;
+  last_contact_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KanbanColumnWithLeads extends KanbanColumn {
+  leads: Lead[];
+  count: number;
+}
