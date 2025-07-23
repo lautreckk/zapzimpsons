@@ -34,10 +34,19 @@ export const handler = async (event, context) => {
     const webhookData = JSON.parse(event.body);
     console.log(`📨 ${timestamp} - Webhook recebida:`, JSON.stringify(webhookData, null, 2));
 
-    // Evolution API pode enviar formato direto
-    const processedData = webhookData.event && webhookData.instance && webhookData.data 
-      ? { body: webhookData } 
-      : webhookData;
+    // Verificar se é array (novo formato)
+    let processedData;
+    if (Array.isArray(webhookData) && webhookData.length > 0) {
+      // Novo formato: array com body
+      const firstItem = webhookData[0];
+      processedData = { body: firstItem.body };
+    } else if (webhookData.event && webhookData.instance && webhookData.data) {
+      // Formato direto
+      processedData = { body: webhookData };
+    } else {
+      // Formato antigo
+      processedData = webhookData;
+    }
 
     // Verificar se é evento de mensagem
     if (processedData.body?.event === 'messages.upsert') {
