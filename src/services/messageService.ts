@@ -166,7 +166,7 @@ export class MessageService {
 
     const payload = {
       number: phone,
-      mediatype: mediaType.charAt(0).toUpperCase() + mediaType.slice(1),
+      mediatype: mediaType, // API espera minúsculo: image, video, document, audio
       mimetype: mimeType,
       caption: caption || '',
       media: mediaToSend,
@@ -185,8 +185,7 @@ export class MessageService {
       ...payload,
       media: `${mediaToSend.substring(0, 50)}...` // Log apenas os primeiros 50 chars
     });
-    console.log('MediaType original:', mediaType);
-    console.log('MediaType capitalized:', mediaType.charAt(0).toUpperCase() + mediaType.slice(1));
+    console.log('MediaType sent:', mediaType);
     console.log('MimeType:', mimeType);
     console.log('FileName:', fileName);
     console.log('Caption:', caption);

@@ -254,7 +254,7 @@ export class WhatsAppService {
         }
         
         // Se não encontrou nos campos esperados, log para debug
-        console.log('Profile picture response format:', data);
+        console.log('Profile picture response format:', JSON.stringify(data, null, 2));
       }
       
       return null;
