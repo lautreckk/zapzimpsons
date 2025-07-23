@@ -175,7 +175,7 @@ export const handler = async (event, context) => {
       console.log(`✅ ${timestamp} - Instância encontrada: ${instance.instance_name}`);
       
       // Processar mensagem
-      const result = await processMessage(supabase, instance, messageData, chatIdentifier, contactName, isFromMe, isGroup, timestamp);
+      const result = await processMessage(supabase, instance, messageData, chatIdentifier, contactName, isFromMe, isGroup, instanceName, timestamp);
       
       return {
         statusCode: 200,
@@ -215,7 +215,7 @@ export const handler = async (event, context) => {
 };
 
 // Função para processar mensagens
-async function processMessage(supabase, instance, messageData, chatIdentifier, contactName, isFromMe, isGroup, timestamp) {
+async function processMessage(supabase, instance, messageData, chatIdentifier, contactName, isFromMe, isGroup, instanceName, timestamp) {
   try {
     console.log(`${isGroup ? '👥' : '👤'} ${timestamp} - Buscando contato: ${chatIdentifier} (${isGroup ? 'GRUPO' : 'INDIVIDUAL'})`);
     
@@ -309,24 +309,32 @@ async function processMessage(supabase, instance, messageData, chatIdentifier, c
       content = messageData.message.imageMessage.caption || 'Imagem';
       messageType = 'image';
       mediaUrl = messageData.message.imageMessage.url;
+      // Verificar se já tem base64 na mensagem
+      mediaBase64 = messageData.message.base64 || null;
     } else if (messageData.message.audioMessage) {
       content = 'Áudio';
       messageType = 'audio';
       mediaUrl = messageData.message.audioMessage.url;
+      // Verificar se já tem base64 na mensagem
+      mediaBase64 = messageData.message.base64 || null;
     } else if (messageData.message.videoMessage) {
       content = messageData.message.videoMessage.caption || 'Vídeo';
       messageType = 'video';
       mediaUrl = messageData.message.videoMessage.url;
+      // Verificar se já tem base64 na mensagem
+      mediaBase64 = messageData.message.base64 || null;
     } else if (messageData.message.documentMessage) {
       content = messageData.message.documentMessage.title || 'Documento';
       messageType = 'document';
       mediaUrl = messageData.message.documentMessage.url;
+      // Verificar se já tem base64 na mensagem
+      mediaBase64 = messageData.message.base64 || null;
     } else {
       content = `Mensagem ${messageData.messageType}`;
     }
     
-    // Baixar mídia se necessário
-    if (messageType !== 'text' && mediaUrl) {
+    // Baixar mídia apenas se não tiver base64 e tiver URL
+    if (messageType !== 'text' && mediaUrl && !mediaBase64) {
       console.log(`🔽 ${timestamp} - Baixando mídia (${messageType}): ${messageData.key.id}`);
       mediaBase64 = await downloadMediaBase64(instanceName, messageData.key.id);
       if (mediaBase64) {
@@ -334,6 +342,8 @@ async function processMessage(supabase, instance, messageData, chatIdentifier, c
       } else {
         console.log(`⚠️ ${timestamp} - Falhou ao baixar mídia, continuando sem base64`);
       }
+    } else if (mediaBase64) {
+      console.log(`🎯 ${timestamp} - Base64 já disponível na mensagem (${mediaBase64?.length || 0} chars)`);
     }
     
     console.log(`💾 ${timestamp} - Salvando mensagem: "${content.substring(0, 30)}..." (${messageType})`);
