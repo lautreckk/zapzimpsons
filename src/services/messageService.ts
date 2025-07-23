@@ -156,12 +156,12 @@ export class MessageService {
     conversationId: string,
     instanceId: string
   ): Promise<void> {
-    // Testar se o base64 precisa do prefixo data URI
+    // API espera apenas base64 puro, sem prefixo data URI
     let mediaToSend = mediaBase64;
     
-    // Se não começa com data:, adicionar o prefixo
-    if (!mediaBase64.startsWith('data:')) {
-      mediaToSend = `data:${mimeType};base64,${mediaBase64}`;
+    // Se tem prefixo data URI, remover
+    if (mediaBase64.startsWith('data:')) {
+      mediaToSend = mediaBase64.split(',')[1];
     }
 
     const payload = {
@@ -180,7 +180,8 @@ export class MessageService {
     console.log('URL:', `https://api.gruposena.club/message/sendMedia/${instanceName}`);
     console.log('Original mediaBase64 length:', mediaBase64.length);
     console.log('Original starts with:', mediaBase64.substring(0, 30));
-    console.log('Processed media starts with:', mediaToSend.substring(0, 50));
+    console.log('Processed media length:', mediaToSend.length);
+    console.log('Processed media starts with:', mediaToSend.substring(0, 30));
     console.log('Payload:', {
       ...payload,
       media: `${mediaToSend.substring(0, 50)}...` // Log apenas os primeiros 50 chars
