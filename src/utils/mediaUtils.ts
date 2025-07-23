@@ -95,7 +95,7 @@ export class MediaUtils {
   }
 
   /**
-   * Converte arquivo para base64
+   * Converte arquivo para base64 (apenas dados, sem prefixo)
    */
   static async fileToBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -105,6 +105,20 @@ export class MediaUtils {
         // Remove o prefixo data:type;base64,
         const base64Data = base64.split(',')[1];
         resolve(base64Data);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  /**
+   * Converte arquivo para data URI completo
+   */
+  static async fileToDataURI(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        resolve(reader.result as string);
       };
       reader.onerror = reject;
       reader.readAsDataURL(file);
