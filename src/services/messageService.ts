@@ -90,6 +90,178 @@ export class MessageService {
       .eq('id', conversationId);
   }
 
+  static async sendAudio(
+    instanceName: string,
+    phone: string,
+    audioBase64: string,
+    conversationId: string,
+    instanceId: string,
+    duration?: number
+  ): Promise<void> {
+    // Send audio via WhatsApp API
+    const response = await fetch(`https://api.gruposena.club/message/sendWhatsAppAudio/${instanceName}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': '3ac318ab976bc8c75dfe827e865a576c'
+      },
+      body: JSON.stringify({
+        number: phone,
+        audio: audioBase64,
+        delay: 0
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to send audio: ${response.statusText}`);
+    }
+
+    // Save message to database
+    const { error } = await supabase
+      .from('messages')
+      .insert({
+        conversation_id: conversationId,
+        instance_id: instanceId,
+        sender_phone: 'system',
+        recipient_phone: phone,
+        message_type: 'audio',
+        content: duration ? `Áudio ${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')}` : 'Áudio',
+        media_base64: audioBase64,
+        is_from_me: true,
+        timestamp: new Date().toISOString(),
+        status: 'sent'
+      });
+
+    if (error) {
+      throw new Error(`Failed to save audio message: ${error.message}`);
+    }
+
+    // Update conversation last message time
+    await supabase
+      .from('conversations')
+      .update({
+        last_message_at: new Date().toISOString()
+      })
+      .eq('id', conversationId);
+  }
+
+  static async sendMedia(
+    instanceName: string,
+    phone: string,
+    mediaBase64: string,
+    mediaType: 'image' | 'video' | 'document',
+    mimeType: string,
+    fileName: string,
+    caption: string,
+    conversationId: string,
+    instanceId: string
+  ): Promise<void> {
+    // Send media via WhatsApp API
+    const response = await fetch(`https://api.gruposena.club/message/sendMedia/${instanceName}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': '3ac318ab976bc8c75dfe827e865a576c'
+      },
+      body: JSON.stringify({
+        number: phone,
+        mediatype: mediaType.charAt(0).toUpperCase() + mediaType.slice(1),
+        mimetype: mimeType,
+        caption: caption,
+        media: mediaBase64,
+        fileName: fileName,
+        delay: 0,
+        linkPreview: true
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to send media: ${response.statusText}`);
+    }
+
+    // Save message to database
+    const { error } = await supabase
+      .from('messages')
+      .insert({
+        conversation_id: conversationId,
+        instance_id: instanceId,
+        sender_phone: 'system',
+        recipient_phone: phone,
+        message_type: mediaType,
+        content: caption || fileName,
+        media_base64: mediaBase64,
+        is_from_me: true,
+        timestamp: new Date().toISOString(),
+        status: 'sent'
+      });
+
+    if (error) {
+      throw new Error(`Failed to save media message: ${error.message}`);
+    }
+
+    // Update conversation last message time
+    await supabase
+      .from('conversations')
+      .update({
+        last_message_at: new Date().toISOString()
+      })
+      .eq('id', conversationId);
+  }
+
+  static async sendSticker(
+    instanceName: string,
+    phone: string,
+    stickerBase64: string,
+    conversationId: string,
+    instanceId: string
+  ): Promise<void> {
+    // Send sticker via WhatsApp API
+    const response = await fetch(`https://api.gruposena.club/message/sendSticker/${instanceName}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': '3ac318ab976bc8c75dfe827e865a576c'
+      },
+      body: JSON.stringify({
+        number: phone,
+        sticker: stickerBase64,
+        delay: 0
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to send sticker: ${response.statusText}`);
+    }
+
+    // Save message to database
+    const { error } = await supabase
+      .from('messages')
+      .insert({
+        conversation_id: conversationId,
+        instance_id: instanceId,
+        sender_phone: 'system',
+        recipient_phone: phone,
+        message_type: 'image', // Stickers são tratados como imagens
+        content: 'Sticker',
+        media_base64: stickerBase64,
+        is_from_me: true,
+        timestamp: new Date().toISOString(),
+        status: 'sent'
+      });
+
+    if (error) {
+      throw new Error(`Failed to save sticker message: ${error.message}`);
+    }
+
+    // Update conversation last message time
+    await supabase
+      .from('conversations')
+      .update({
+        last_message_at: new Date().toISOString()
+      })
+      .eq('id', conversationId);
+  }
+
   static async markAsRead(conversationId: string): Promise<void> {
     const { error } = await supabase
       .from('conversations')

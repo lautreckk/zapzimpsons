@@ -21,7 +21,8 @@ import {
   VolumeX,
   Info,
   VideoIcon,
-  MessageCircle
+  MessageCircle,
+  Mic
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -32,12 +33,18 @@ import { toast } from "sonner";
 import { format, isToday, isYesterday } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
+import { AudioRecorder } from "@/components/AudioRecorder";
+import { MediaUpload } from "@/components/MediaUpload";
+import { EmojiPicker } from "@/components/EmojiPicker";
 
 export function ChatInbox() {
   const [selectedConversation, setSelectedConversation] = useState<(Conversation & { contact: Contact }) | null>(null);
   const [selectedInstance, setSelectedInstance] = useState<WhatsAppInstance | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [showAudioRecorder, setShowAudioRecorder] = useState(false);
+  const [showMediaUpload, setShowMediaUpload] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const queryClient = useQueryClient();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { playNotificationSound, soundEnabled, setSoundEnabled } = useNotificationSound();
@@ -82,6 +89,67 @@ export function ChatInbox() {
     },
     onError: (error: Error) => {
       toast.error(`Erro ao enviar mensagem: ${error.message}`);
+    }
+  });
+
+  // Send audio mutation
+  const sendAudioMutation = useMutation({
+    mutationFn: async ({ audioBase64, duration }: { audioBase64: string, duration: number }) => {
+      if (!selectedConversation || !selectedInstance) return;
+      
+      await MessageService.sendAudio(
+        selectedInstance.instance_name,
+        selectedConversation.contact.phone_number,
+        audioBase64,
+        selectedConversation.id,
+        selectedInstance.id,
+        duration
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['messages', selectedConversation?.id] });
+      queryClient.invalidateQueries({ queryKey: ['conversations', selectedInstance?.id] });
+    },
+    onError: (error: Error) => {
+      toast.error(`Erro ao enviar áudio: ${error.message}`);
+    }
+  });
+
+  // Send media mutation
+  const sendMediaMutation = useMutation({
+    mutationFn: async ({ 
+      mediaBase64, 
+      mediaType, 
+      mimeType, 
+      fileName, 
+      caption 
+    }: { 
+      mediaBase64: string,
+      mediaType: 'image' | 'video' | 'document',
+      mimeType: string,
+      fileName: string,
+      caption: string
+    }) => {
+      if (!selectedConversation || !selectedInstance) return;
+      
+      await MessageService.sendMedia(
+        selectedInstance.instance_name,
+        selectedConversation.contact.phone_number,
+        mediaBase64,
+        mediaType,
+        mimeType,
+        fileName,
+        caption,
+        selectedConversation.id,
+        selectedInstance.id
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['messages', selectedConversation?.id] });
+      queryClient.invalidateQueries({ queryKey: ['conversations', selectedInstance?.id] });
+    },
+    onError: (error: Error) => {
+      toast.error(`Erro ao enviar mídia: ${error.message}`);
     }
   });
 
@@ -170,6 +238,30 @@ export function ChatInbox() {
   const handleSendMessage = () => {
     if (!newMessage.trim() || !selectedConversation) return;
     sendMessageMutation.mutate({ content: newMessage.trim() });
+  };
+
+  const handleSendAudio = async (audioBase64: string, duration: number) => {
+    await sendAudioMutation.mutateAsync({ audioBase64, duration });
+  };
+
+  const handleSendMedia = async (
+    mediaBase64: string,
+    mediaType: 'image' | 'video' | 'document',
+    mimeType: string,
+    fileName: string,
+    caption: string
+  ) => {
+    await sendMediaMutation.mutateAsync({
+      mediaBase64,
+      mediaType,
+      mimeType,
+      fileName,
+      caption
+    });
+  };
+
+  const handleEmojiSelect = (emoji: string) => {
+    setNewMessage(prev => prev + emoji);
   };
 
   const formatMessageTime = (timestamp: string) => {
@@ -443,40 +535,109 @@ export function ChatInbox() {
             </div>
 
             {/* Message Input */}
-            <div className="p-4 border-t border-border bg-card flex-shrink-0">
-              <div className="flex items-end gap-2">
-                <Button size="sm" variant="outline" className="mb-2">
-                  <Paperclip className="w-4 h-4" />
-                </Button>
-                <div className="flex-1">
-                  <Textarea 
-                    placeholder="Digite sua mensagem..."
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    className="min-h-[40px] max-h-32 resize-none"
-                    disabled={sendMessageMutation.isPending}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage();
-                      }
-                    }}
+            <div className="border-t border-border bg-card flex-shrink-0">
+              {/* Media Upload Area */}
+              {showMediaUpload && (
+                <div className="p-4 border-b border-border">
+                  <MediaUpload
+                    onSendMedia={handleSendMedia}
+                    onCancel={() => setShowMediaUpload(false)}
+                    disabled={sendMediaMutation.isPending}
                   />
                 </div>
-                <Button size="sm" variant="outline" className="mb-2">
-                  <Smile className="w-4 h-4" />
-                </Button>
-                <Button 
-                  className="mb-2"
-                  onClick={handleSendMessage}
-                  disabled={sendMessageMutation.isPending || !newMessage.trim()}
-                >
-                  {sendMessageMutation.isPending ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Send className="w-4 h-4" />
-                  )}
-                </Button>
+              )}
+
+              {/* Audio Recorder Area */}
+              {showAudioRecorder && (
+                <div className="p-4 border-b border-border">
+                  <AudioRecorder
+                    onSendAudio={handleSendAudio}
+                    onCancel={() => setShowAudioRecorder(false)}
+                    disabled={sendAudioMutation.isPending}
+                  />
+                </div>
+              )}
+
+              {/* Main Input Area */}
+              <div className="p-4 relative">
+                {/* Emoji Picker */}
+                {showEmojiPicker && (
+                  <EmojiPicker
+                    onEmojiSelect={handleEmojiSelect}
+                    onClose={() => setShowEmojiPicker(false)}
+                  />
+                )}
+
+                <div className="flex items-end gap-2">
+                  {/* Media Upload Button */}
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="mb-2"
+                    onClick={() => {
+                      setShowMediaUpload(!showMediaUpload);
+                      setShowAudioRecorder(false);
+                    }}
+                    disabled={sendMessageMutation.isPending || sendMediaMutation.isPending || sendAudioMutation.isPending}
+                  >
+                    <Paperclip className="w-4 h-4" />
+                  </Button>
+
+                  {/* Audio Recorder Button */}
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="mb-2"
+                    onClick={() => {
+                      setShowAudioRecorder(!showAudioRecorder);
+                      setShowMediaUpload(false);
+                    }}
+                    disabled={sendMessageMutation.isPending || sendMediaMutation.isPending || sendAudioMutation.isPending}
+                  >
+                    <Mic className="w-4 h-4" />
+                  </Button>
+
+                  {/* Text Input */}
+                  <div className="flex-1">
+                    <Textarea 
+                      placeholder="Digite sua mensagem..."
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      className="min-h-[40px] max-h-32 resize-none"
+                      disabled={sendMessageMutation.isPending || sendMediaMutation.isPending || sendAudioMutation.isPending}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }
+                      }}
+                    />
+                  </div>
+
+                  {/* Emoji Button */}
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="mb-2"
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    disabled={sendMessageMutation.isPending || sendMediaMutation.isPending || sendAudioMutation.isPending}
+                  >
+                    <Smile className="w-4 h-4" />
+                  </Button>
+
+                  {/* Send Button */}
+                  <Button 
+                    className="mb-2"
+                    onClick={handleSendMessage}
+                    disabled={sendMessageMutation.isPending || sendMediaMutation.isPending || sendAudioMutation.isPending || !newMessage.trim()}
+                  >
+                    {sendMessageMutation.isPending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
           </>
