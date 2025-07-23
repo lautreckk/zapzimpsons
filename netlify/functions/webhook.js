@@ -5,6 +5,38 @@ const supabaseUrl = 'https://bcbootnozntaomsysdpa.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJjYm9vdG5vem50YW9tc3lzZHBhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyNDg1MzAsImV4cCI6MjA2ODgyNDUzMH0.wtMTJQ0afytLRD4AtTs3NetUNzb8C-VdC2lTy8SVwbk';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+// Função para baixar mídia e converter para base64
+async function downloadMediaBase64(instanceName, messageId) {
+  try {
+    const response = await fetch(`https://api.gruposena.club/chat/getBase64FromMediaMessage/${instanceName}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': '3ac318ab976bc8c75dfe827e865a576c'
+      },
+      body: JSON.stringify({
+        message: {
+          key: {
+            id: messageId
+          }
+        },
+        convertToMp4: false
+      })
+    });
+
+    if (!response.ok) {
+      console.error(`❌ Erro ao baixar mídia: ${response.status} ${response.statusText}`);
+      return null;
+    }
+
+    const data = await response.json();
+    return data.base64 || null;
+  } catch (error) {
+    console.error('❌ Erro ao fazer download da mídia:', error);
+    return null;
+  }
+}
+
 export const handler = async (event, context) => {
   const timestamp = new Date().toISOString();
   
@@ -269,6 +301,7 @@ async function processMessage(supabase, instance, messageData, chatIdentifier, c
     let content = '';
     let messageType = 'text';
     let mediaUrl = null;
+    let mediaBase64 = null;
     
     if (messageData.message.conversation) {
       content = messageData.message.conversation;
@@ -290,6 +323,17 @@ async function processMessage(supabase, instance, messageData, chatIdentifier, c
       mediaUrl = messageData.message.documentMessage.url;
     } else {
       content = `Mensagem ${messageData.messageType}`;
+    }
+    
+    // Baixar mídia se necessário
+    if (messageType !== 'text' && mediaUrl) {
+      console.log(`🔽 ${timestamp} - Baixando mídia (${messageType}): ${messageData.key.id}`);
+      mediaBase64 = await downloadMediaBase64(instanceName, messageData.key.id);
+      if (mediaBase64) {
+        console.log(`✅ ${timestamp} - Mídia baixada com sucesso (${mediaBase64?.length || 0} chars)`);
+      } else {
+        console.log(`⚠️ ${timestamp} - Falhou ao baixar mídia, continuando sem base64`);
+      }
     }
     
     console.log(`💾 ${timestamp} - Salvando mensagem: "${content.substring(0, 30)}..." (${messageType})`);
@@ -330,6 +374,7 @@ async function processMessage(supabase, instance, messageData, chatIdentifier, c
         message_type: messageType,
         content,
         media_url: mediaUrl,
+        media_base64: mediaBase64,
         is_from_me: isFromMe,
         timestamp: new Date(messageData.messageTimestamp * 1000).toISOString(),
         status: 'sent'

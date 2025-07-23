@@ -317,6 +317,44 @@ export function ChatInbox() {
                           {message.message_type}
                         </p>
                       )}
+                      
+                      {/* Renderizar mídia se disponível */}
+                      {message.message_type === 'image' && message.media_base64 && (
+                        <img 
+                          src={`data:image/jpeg;base64,${message.media_base64}`}
+                          alt="Imagem enviada"
+                          className="max-w-full max-h-64 rounded-lg mb-2 cursor-pointer"
+                          onClick={() => window.open(`data:image/jpeg;base64,${message.media_base64}`, '_blank')}
+                        />
+                      )}
+                      
+                      {message.message_type === 'audio' && message.media_base64 && (
+                        <audio 
+                          controls 
+                          className="w-full mb-2"
+                          src={`data:audio/ogg;base64,${message.media_base64}`}
+                        />
+                      )}
+                      
+                      {message.message_type === 'video' && message.media_base64 && (
+                        <video 
+                          controls 
+                          className="max-w-full max-h-64 rounded-lg mb-2"
+                          src={`data:video/mp4;base64,${message.media_base64}`}
+                        />
+                      )}
+                      
+                      {message.message_type === 'document' && message.media_base64 && (
+                        <a 
+                          href={`data:application/octet-stream;base64,${message.media_base64}`}
+                          download={message.content || 'documento'}
+                          className="inline-flex items-center gap-2 text-blue-500 hover:text-blue-700 mb-2"
+                        >
+                          <span>📎</span>
+                          {message.content || 'Documento'}
+                        </a>
+                      )}
+                      
                       <p className="text-sm">{message.content}</p>
                       <p className={`text-xs mt-1 ${
                         message.is_from_me 

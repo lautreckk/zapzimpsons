@@ -52,6 +52,7 @@ export interface Message {
   message_type: 'text' | 'image' | 'audio' | 'video' | 'document' | 'sticker';
   content?: string;
   media_url?: string;
+  media_base64?: string;
   is_from_me: boolean;
   timestamp: string;
   status: 'sent' | 'delivered' | 'read' | 'failed';
