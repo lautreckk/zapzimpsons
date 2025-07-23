@@ -1,0 +1,207 @@
+import { supabase } from '@/lib/supabase';
+import { Conversation, Message, Contact } from '@/types/whatsapp';
+
+export class MessageService {
+  static async getConversations(instanceId?: string): Promise<(Conversation & { contact: Contact })[]> {
+    let query = supabase
+      .from('conversations')
+      .select(`
+        *,
+        contact:contacts(*)
+      `)
+      .order('last_message_at', { ascending: false });
+
+    if (instanceId) {
+      query = query.eq('instance_id', instanceId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error(`Failed to fetch conversations: ${error.message}`);
+    }
+
+    return data || [];
+  }
+
+  static async getMessages(conversationId: string): Promise<Message[]> {
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('conversation_id', conversationId)
+      .order('timestamp', { ascending: true });
+
+    if (error) {
+      throw new Error(`Failed to fetch messages: ${error.message}`);
+    }
+
+    return data || [];
+  }
+
+  static async sendMessage(
+    instanceName: string,
+    phone: string,
+    content: string,
+    conversationId: string,
+    instanceId: string
+  ): Promise<void> {
+    // Send message via WhatsApp API
+    const response = await fetch('https://api.gruposena.club/message/sendText/' + instanceName, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': '3ac318ab976bc8c75dfe827e865a576c'
+      },
+      body: JSON.stringify({
+        number: phone,
+        text: content
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to send message: ${response.statusText}`);
+    }
+
+    // Save message to database
+    const { error } = await supabase
+      .from('messages')
+      .insert({
+        conversation_id: conversationId,
+        instance_id: instanceId,
+        sender_phone: 'system', // Will be updated with actual phone
+        recipient_phone: phone,
+        message_type: 'text',
+        content,
+        is_from_me: true,
+        timestamp: new Date().toISOString(),
+        status: 'sent'
+      });
+
+    if (error) {
+      throw new Error(`Failed to save message: ${error.message}`);
+    }
+
+    // Update conversation last message time
+    await supabase
+      .from('conversations')
+      .update({
+        last_message_at: new Date().toISOString()
+      })
+      .eq('id', conversationId);
+  }
+
+  static async markAsRead(conversationId: string): Promise<void> {
+    const { error } = await supabase
+      .from('conversations')
+      .update({ unread_count: 0 })
+      .eq('id', conversationId);
+
+    if (error) {
+      throw new Error(`Failed to mark conversation as read: ${error.message}`);
+    }
+  }
+
+  static async updateConversationStatus(
+    conversationId: string, 
+    status: 'active' | 'closed' | 'waiting'
+  ): Promise<void> {
+    const { error } = await supabase
+      .from('conversations')
+      .update({ status })
+      .eq('id', conversationId);
+
+    if (error) {
+      throw new Error(`Failed to update conversation status: ${error.message}`);
+    }
+  }
+
+  static async addConversationTag(conversationId: string, tag: string): Promise<void> {
+    // First get current tags
+    const { data: conversation } = await supabase
+      .from('conversations')
+      .select('tags')
+      .eq('id', conversationId)
+      .single();
+
+    if (conversation) {
+      const currentTags = conversation.tags || [];
+      if (!currentTags.includes(tag)) {
+        const { error } = await supabase
+          .from('conversations')
+          .update({ tags: [...currentTags, tag] })
+          .eq('id', conversationId);
+
+        if (error) {
+          throw new Error(`Failed to add tag: ${error.message}`);
+        }
+      }
+    }
+  }
+
+  static async removeConversationTag(conversationId: string, tag: string): Promise<void> {
+    // First get current tags
+    const { data: conversation } = await supabase
+      .from('conversations')
+      .select('tags')
+      .eq('id', conversationId)
+      .single();
+
+    if (conversation) {
+      const currentTags = conversation.tags || [];
+      const { error } = await supabase
+        .from('conversations')
+        .update({ tags: currentTags.filter(t => t !== tag) })
+        .eq('id', conversationId);
+
+      if (error) {
+        throw new Error(`Failed to remove tag: ${error.message}`);
+      }
+    }
+  }
+
+  static async updateConversationNotes(conversationId: string, notes: string): Promise<void> {
+    const { error } = await supabase
+      .from('conversations')
+      .update({ notes })
+      .eq('id', conversationId);
+
+    if (error) {
+      throw new Error(`Failed to update notes: ${error.message}`);
+    }
+  }
+
+  static subscribeToMessages(conversationId: string, callback: (message: Message) => void) {
+    return supabase
+      .channel(`messages:${conversationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${conversationId}`
+        },
+        (payload) => {
+          callback(payload.new as Message);
+        }
+      )
+      .subscribe();
+  }
+
+  static subscribeToConversations(callback: (conversation: any) => void) {
+    return supabase
+      .channel('conversations')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'conversations'
+        },
+        (payload) => {
+          callback(payload);
+        }
+      )
+      .subscribe();
+  }
+}

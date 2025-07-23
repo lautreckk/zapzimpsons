@@ -1,0 +1,35 @@
+[
+  {
+    "headers": {},
+    "params": {},
+    "query": {},
+    "body": {
+      "event": "messages.upsert",
+      "instance": "atendimento3",
+      "data": {
+        "key": {
+          "remoteJid": "5511999999999@s.whatsapp.net",
+          "fromMe": false,
+          "id": "TEST123456",
+          "senderLid": "144942747881497@lid"
+        },
+        "pushName": "Teste Usuario",
+        "status": "DELIVERY_ACK",
+        "message": {
+          "conversation": "Mensagem de teste via ngrok!"
+        },
+        "messageType": "conversation",
+        "messageTimestamp": 1753257700,
+        "instanceId": "d57979aa-f857-42f7-b935-7081bdda46dd",
+        "source": "web"
+      },
+      "destination": "https://d0cddd7995a6.ngrok-free.app/api/webhook",
+      "date_time": "2025-07-23T15:51:55.000Z",
+      "sender": "558499430349@s.whatsapp.net",
+      "server_url": "https://api.gruposena.club",
+      "apikey": "test"
+    },
+    "webhookUrl": "https://d0cddd7995a6.ngrok-free.app/api/webhook",
+    "executionMode": "test"
+  }
+]
