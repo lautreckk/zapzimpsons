@@ -413,4 +413,53 @@ export class MessageService {
       )
       .subscribe();
   }
+
+  static async updateContactProfilePicture(phoneNumber: string, profilePictureUrl: string): Promise<void> {
+    const { error } = await supabase
+      .from('contacts')
+      .update({ profile_picture: profilePictureUrl })
+      .eq('phone_number', phoneNumber);
+
+    if (error) {
+      throw new Error(`Failed to update contact profile picture: ${error.message}`);
+    }
+  }
+
+  static async fetchAndUpdateProfilePictures(instanceName: string, conversations: (Conversation & { contact: Contact })[]): Promise<void> {
+    const { WhatsAppService } = await import('./whatsappService');
+    
+    // Processar em lotes para não sobrecarregar a API
+    const batchSize = 5;
+    for (let i = 0; i < conversations.length; i += batchSize) {
+      const batch = conversations.slice(i, i + batchSize);
+      
+      await Promise.all(
+        batch.map(async (conversation) => {
+          try {
+            // Só buscar se não tem foto de perfil ainda
+            if (!conversation.contact.profile_picture) {
+              const profilePictureUrl = await WhatsAppService.fetchProfilePicture(
+                instanceName,
+                conversation.contact.phone_number
+              );
+              
+              if (profilePictureUrl) {
+                await this.updateContactProfilePicture(
+                  conversation.contact.phone_number,
+                  profilePictureUrl
+                );
+              }
+            }
+          } catch (error) {
+            console.error(`Failed to fetch profile picture for ${conversation.contact.phone_number}:`, error);
+          }
+        })
+      );
+      
+      // Pequena pausa entre lotes
+      if (i + batchSize < conversations.length) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+  }
 }

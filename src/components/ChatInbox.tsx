@@ -62,6 +62,21 @@ export function ChatInbox() {
     enabled: !!selectedInstance?.id,
   });
 
+  // Fetch profile pictures when conversations load
+  useEffect(() => {
+    if (conversations.length > 0 && selectedInstance) {
+      // Executar em background, sem bloquear a UI
+      MessageService.fetchAndUpdateProfilePictures(selectedInstance.instance_name, conversations)
+        .then(() => {
+          // Invalidar query para recarregar com as fotos atualizadas
+          queryClient.invalidateQueries({ queryKey: ['conversations', selectedInstance.id] });
+        })
+        .catch(error => {
+          console.error('Failed to fetch profile pictures:', error);
+        });
+    }
+  }, [conversations.length, selectedInstance?.instance_name, queryClient]);
+
   // Get messages for selected conversation
   const { data: messages = [], isLoading: messagesLoading } = useQuery({
     queryKey: ['messages', selectedConversation?.id],

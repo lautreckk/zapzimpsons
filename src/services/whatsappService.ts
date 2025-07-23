@@ -219,4 +219,48 @@ export class WhatsAppService {
       console.error('Failed to sync all instances:', error);
     }
   }
+
+  static async fetchProfilePicture(instanceName: string, phoneNumber: string): Promise<string | null> {
+    try {
+      const config = await this.getApiConfig();
+      
+      const response = await fetch(`${config.api_url}/chat/fetchProfilePictureUrl/${instanceName}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': config.api_key
+        },
+        body: JSON.stringify({
+          number: phoneNumber
+        })
+      });
+
+      if (!response.ok) {
+        console.warn(`Failed to fetch profile picture for ${phoneNumber}: ${response.statusText}`);
+        return null;
+      }
+
+      const data = await response.json();
+      
+      // A API pode retornar diferentes formatos, vamos tratar os possíveis retornos
+      if (data && typeof data === 'object') {
+        // Possíveis campos onde a URL pode estar
+        const possibleFields = ['profilePictureUrl', 'url', 'picture', 'profilePicUrl', 'profileUrl'];
+        
+        for (const field of possibleFields) {
+          if (data[field] && typeof data[field] === 'string') {
+            return data[field];
+          }
+        }
+        
+        // Se não encontrou nos campos esperados, log para debug
+        console.log('Profile picture response format:', data);
+      }
+      
+      return null;
+    } catch (error) {
+      console.error(`Error fetching profile picture for ${phoneNumber}:`, error);
+      return null;
+    }
+  }
 }
